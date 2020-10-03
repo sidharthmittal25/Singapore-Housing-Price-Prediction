@@ -17,9 +17,9 @@ from sklearn.metrics import mean_absolute_error
 
 
 # In[5]:
+##Reading different files and consolidating it into 1 file
 
-
-path =r'F:\5106 GA\Private Raw data'
+path =r'file.path.name'
 filenames = glob.glob(path + "/*.csv")
 private_full = pd.DataFrame()
 for filename in filenames:
@@ -31,14 +31,14 @@ private_monthly = private_monthly.loc[:'2020-08']
 print(private_monthly)
 
 
-# In[7]:
+# In[7]: sesonal decompose to understand the time-series components od data
 
 
 decom_private = seasonal_decompose(private_monthly['avg_transaction_price'])    
 decom_private.plot() 
 
 
-# In[14]:
+# In[14]: separated dataset into train and test for testing the model and then ran auto-arima on it
 
 
 train_private = private_monthly.loc[:'2017-08',:]
@@ -47,7 +47,7 @@ model_train_p = pm.auto_arima(train_private['avg_transaction_price'], seasonal =
 model_train_p.summary()
 
 
-# In[15]:
+# In[15]: checking for residual values to make sure no information is lost
 
 
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
@@ -57,7 +57,7 @@ plot_pacf(model_train_p.resid(), lags=20)
 plt.show()
 
 
-# In[68]:
+# In[68]: predicting values for next 36 months
 
 
 pred_train_p, conf_train_p = model_train_p.predict(36, return_conf_int=True, alpha=0.05)
@@ -71,7 +71,7 @@ print(mape_private)
 print(conf_train_p)
 
 
-# In[46]:
+# In[46]: Plotting predicted values along with confidence interval
 
 
 test_arima = pd.DataFrame()
@@ -94,14 +94,14 @@ plt.tick_params(labelsize=18)
 plt.show() 
 
 
-# In[27]:
+# In[27]: Trained the model with entire dataset
 
 
 model_private = pm.auto_arima(private_monthly['avg_transaction_price'], seasonal = True, m=12, suppress_warnings=True) # m=seasonal length
 model_private.summary()
 
 
-# In[28]:
+# In[28]: checking for residual values
 
 
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
@@ -112,9 +112,7 @@ plt.show()
 
 
 # In[44]:
-
-
-# Price prediction by postal district-D1
+# Price prediction by postal district-D1 and calculating the ROI for each of the district
 for i in range(28):
     i += 1
     dis = private_full[private_full['Postal District'] == i]
@@ -131,48 +129,3 @@ for i in range(28):
         print()
     except ValueError:
         i += 1  
-
-
-# In[58]:
-
-
-# Price prediction by postal district-D1
-for i in range(28):
-    i += 1
-    dis = private_full[private_full['Postal District'] == i]
-    try:
-        dis_monthly = dis.groupby(['month_year']).agg(avg_transaction_price = ('Unit Price ($ psm)', 'mean'))
-        dis_monthly = dis_monthly.loc[:'2020-08']
-        model_dis = pm.auto_arima(dis_monthly, seasonal = True, m=12, suppress_warnings=True) # m=seasonal length
-        predic_dis = model_dis.predict(36, return_conf_int=False, alpha=0.05)
-        roi = ((predic_dis[-1] - dis_monthly.loc['2020-08'].values)/dis_monthly.loc['2020-08'].values)*100
-        predic_dis = pd.Series(predic_dis)
-        print('District{} {}'.format(i,roi))
-    except ValueError:
-        i += 1 
-
-
-# In[66]:
-
-
-i=20
-dis = private_full[private_full['Postal District'] == i]
-dis_monthly = dis.groupby(['month_year']).agg(avg_transaction_price = ('Unit Price ($ psm)', 'mean'))
-dis_monthly = dis_monthly.loc[:'2020-08']
-
-d20_mean = dis_monthly['avg_transaction_price'].mean()
-d20_std = dis_monthly['avg_transaction_price'].std()
-d20_median = dis_monthly['avg_transaction_price'].median()
-d20_cov = d20_std/d20_mean
-
-print('mean: {}'.format(d20_mean))
-print('std: {}'.format(d20_std))
-print('median: {}'.format(d20_median))
-print('Coefficient of Variation: {}'.format(d20_cov))
-
-
-# In[ ]:
-
-
-
-
